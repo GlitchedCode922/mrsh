@@ -60,7 +60,7 @@ static int verify_command(struct mrsh_state *state, const char *command_name,
 static int run_command(struct mrsh_state *state, int argc, char *argv[],
 		bool default_path) {
 	if (mrsh_has_builtin(argv[0])) {
-		return mrsh_run_builtin(state, argc - _mrsh_optind, &argv[_mrsh_optind]);
+		return mrsh_run_builtin(state, argc, argv);
 	}
 
 	char *path = expand_path(state, argv[0], true, default_path);
