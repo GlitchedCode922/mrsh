@@ -57,3 +57,9 @@ dkms.conf
 /.build
 /highlight
 /mrsh
+
+# Editor settings
+.cache
+.clangd
+compile_commands.json
+.vscode
