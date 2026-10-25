@@ -152,28 +152,12 @@ int builtin_trap(struct mrsh_state *state, int argc, char *argv[]) {
 	}
 
 	enum mrsh_trap_action action;
-	struct mrsh_program *program = NULL;
 	if (action_str[0] == '\0') {
 		action = MRSH_TRAP_IGNORE;
 	} else if (strcmp(action_str, "-") == 0) {
 		action = MRSH_TRAP_DEFAULT;
 	} else {
 		action = MRSH_TRAP_CATCH;
-
-		struct mrsh_parser *parser =
-			mrsh_parser_with_data(action_str, strlen(action_str));
-		program = mrsh_parse_program(parser);
-
-		struct mrsh_position err_pos;
-		const char *err_msg = mrsh_parser_error(parser, &err_pos);
-		if (err_msg != NULL) {
-			fprintf(stderr, "trap: %d:%d: %s\n",
-				err_pos.line, err_pos.column, err_msg);
-			mrsh_parser_destroy(parser);
-			mrsh_program_destroy(program);
-			return 1;
-		}
-		mrsh_parser_destroy(parser);
 	}
 
 	for (int i = _mrsh_optind; i < argc; i++) {
@@ -187,7 +171,26 @@ int builtin_trap(struct mrsh_state *state, int argc, char *argv[]) {
 			return 1;
 		}
 
+		struct mrsh_program *program = NULL;
+		if (action == MRSH_TRAP_CATCH) {
+			struct mrsh_parser *parser =
+				mrsh_parser_with_data(action_str, strlen(action_str));
+			program = mrsh_parse_program(parser);
+
+			struct mrsh_position err_pos;
+			const char *err_msg = mrsh_parser_error(parser, &err_pos);
+			if (err_msg != NULL) {
+				fprintf(stderr, "trap: %d:%d: %s\n",
+					err_pos.line, err_pos.column, err_msg);
+				mrsh_parser_destroy(parser);
+				mrsh_program_destroy(program);
+				return 1;
+			}
+			mrsh_parser_destroy(parser);
+		}
+
 		if (!set_trap(state, sig, action, program)) {
+			mrsh_program_destroy(program);
 			return 1;
 		}
 	}
