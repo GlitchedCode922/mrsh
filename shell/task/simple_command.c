@@ -166,9 +166,58 @@ static int run_builtin(struct mrsh_context *ctx, struct mrsh_simple_command *sc,
 		}
 	}
 
-	// TODO: environment from assignements
+	// TODO: environment from assignments
 
 	int ret = mrsh_run_builtin(ctx->state, argc, argv);
+
+	// In case stdout/stderr are pipes, we need to flush to ensure output lines
+	// aren't out-of-order
+	fflush(stdout);
+	fflush(stderr);
+
+	// Restore old FDs
+	for (size_t i = 0; i < sizeof(fds) / sizeof(fds[0]); ++i) {
+		if (fds[i].dup_fd < 0) {
+			continue;
+		}
+
+		if (dup2(fds[i].dup_fd, fds[i].redir_fd) < 0) {
+			fprintf(stderr, "failed to duplicate file descriptor: %s\n",
+				strerror(errno));
+			return TASK_STATUS_ERROR;
+		}
+		close(fds[i].dup_fd);
+	}
+
+	return ret;
+}
+
+static int run_function(struct mrsh_context *ctx, struct mrsh_simple_command *sc, struct mrsh_command *body) {
+	// Duplicate old FDs to be able to restore them later
+	// Zero-length VLAs are undefined behaviour
+	struct saved_fd fds[sc->io_redirects.len + 1];
+	for (size_t i = 0; i < sizeof(fds) / sizeof(fds[0]); ++i) {
+		fds[i].dup_fd = fds[i].redir_fd = -1;
+	}
+
+	for (size_t i = 0; i < sc->io_redirects.len; ++i) {
+		struct mrsh_io_redirect *redir = sc->io_redirects.data[i];
+		struct saved_fd *saved = &fds[i];
+
+		int redir_fd;
+		int fd = process_redir(redir, &redir_fd);
+		if (fd < 0) {
+			return TASK_STATUS_ERROR;
+		}
+
+		if (!dup_and_save_fd(fd, redir_fd, saved)) {
+			return TASK_STATUS_ERROR;
+		}
+	}
+
+	// TODO: environment from assignments
+
+	int ret = run_command(ctx, body);
 
 	// In case stdout/stderr are pipes, we need to flush to ensure output lines
 	// aren't out-of-order
@@ -331,7 +380,7 @@ int run_simple_command(struct mrsh_context *ctx, struct mrsh_simple_command *sc)
 		// fn_def may be free'd during run_command when overwritten with another
 		// function, so we need to copy it.
 		struct mrsh_command *body = mrsh_command_copy(fn_def->body);
-		ret = run_command(ctx, body);
+		ret = run_function(ctx, sc, body);
 		mrsh_command_destroy(body);
 		pop_frame(state);
 	} else if (mrsh_has_builtin(argv_0)) {
