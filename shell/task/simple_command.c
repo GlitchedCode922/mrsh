@@ -253,7 +253,7 @@ static int run_assignments(struct mrsh_context *ctx, struct mrsh_array *assignme
 		if (mrsh_env_get(ctx->state, assign->name, &prev_attribs) != NULL
 				&& (prev_attribs & MRSH_VAR_ATTRIB_READONLY)) {
 			free(new_value);
-			fprintf(stderr, "cannot modify readonly variable %s\n",
+			fprintf(stderr, "Cannot modify read-only variable %s\n",
 				assign->name);
 			return TASK_STATUS_ERROR;
 		}

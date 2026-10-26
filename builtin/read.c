@@ -11,6 +11,16 @@
 
 static const char read_usage[] = "usage: read [-r] var...\n";
 
+static int readonly_test(struct mrsh_state* state, const char* var) {
+	uint32_t prev_attribs;
+	mrsh_env_get(state, var, &prev_attribs);
+	if ((prev_attribs & MRSH_VAR_ATTRIB_READONLY)) {
+		fprintf(stderr, "read: cannot modify read-only variable %s\n", var);
+		return 1;
+	}
+	return 0;
+}
+
 int builtin_read(struct mrsh_state *state, int argc, char *argv[]) {
 	bool raw = false;
 
@@ -70,13 +80,16 @@ int builtin_read(struct mrsh_state *state, int argc, char *argv[]) {
 
 	if (fields.len <= (size_t)(argc - _mrsh_optind)) {
 		for (size_t i = 0; i < fields.len; ++i) {
+			if (readonly_test(state, argv[_mrsh_optind + i]) != 0) return 1;
 			mrsh_env_set(state, argv[_mrsh_optind + i], (char *)fields.data[i], MRSH_VAR_ATTRIB_NONE);
 		}
 		for (size_t i = fields.len; i < (size_t)(argc - _mrsh_optind); ++i) {
+			if (readonly_test(state, argv[_mrsh_optind + i]) != 0) return 1;
 			mrsh_env_set(state, argv[_mrsh_optind + i], "", MRSH_VAR_ATTRIB_NONE);
 		}
 	} else {
 		for (int i = 0; i < argc - _mrsh_optind - 1; ++i) {
+			if (readonly_test(state, argv[_mrsh_optind + i]) != 0) return 1;
 			mrsh_env_set(state, argv[_mrsh_optind + i], (char *)fields.data[i], MRSH_VAR_ATTRIB_NONE);
 		}
 		struct mrsh_buffer buf_last = {0};
@@ -89,6 +102,7 @@ int builtin_read(struct mrsh_state *state, int argc, char *argv[]) {
 			}
 		}
 		mrsh_buffer_append_char(&buf_last, '\0');
+		if (readonly_test(state, argv[argc - 1]) != 0) return 1;
 		mrsh_env_set(state, argv[argc - 1], buf_last.data, MRSH_VAR_ATTRIB_NONE);
 		mrsh_buffer_finish(&buf_last);
 	}

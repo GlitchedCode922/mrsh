@@ -48,7 +48,7 @@ int builtin_export(struct mrsh_state *state, int argc, char *argv[]) {
 			}
 		}
 		if ((prev_attribs & MRSH_VAR_ATTRIB_READONLY)) {
-			fprintf(stderr, "%s: cannot modify readonly variable %s\n",
+			fprintf(stderr, "%s: cannot modify read-only variable %s\n",
 					argv[0], key);
 			free(key);
 			return 1;

@@ -1,3 +1,4 @@
+#include <stdint.h>
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <limits.h>
@@ -86,6 +87,12 @@ int builtin_getopts(struct mrsh_state *state, int argc, char *argv[]) {
 		mrsh_env_unset(state, "OPTARG");
 	}
 
+	uint32_t prev_attribs;
+	mrsh_env_get(state, name, &prev_attribs);
+	if ((prev_attribs & MRSH_VAR_ATTRIB_READONLY)) {
+		fprintf(stderr, "getopts: cannot modify read-only variable %s\n", name);
+		return 1;
+	}
 	char value[] = {opt == -1 ? (char)'?' : (char)opt, '\0'};
 	mrsh_env_set(state, name, value, MRSH_VAR_ATTRIB_NONE);
 

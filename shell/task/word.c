@@ -301,8 +301,14 @@ static int apply_parameter_cond_op(struct mrsh_context *ctx,
 				return ret;
 			}
 			char *str = mrsh_word_str(*result);
+			uint32_t prev_attribs;
+			mrsh_env_get(ctx->state, wp->name, &prev_attribs);
+			if ((prev_attribs & MRSH_VAR_ATTRIB_READONLY)) {
+				fprintf(stderr, "Cannot modify read-only variable %s\n", wp->name);
+				free(str);
+				return 1;
+			}
 			mrsh_env_set(ctx->state, wp->name, str, 0);
-			free(str);
 		} else {
 			*result = value;
 		}
