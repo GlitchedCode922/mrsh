@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 1
+#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <mrsh/array.h>
 #include <signal.h>
@@ -73,6 +73,15 @@ void update_process(struct mrsh_state *state, pid_t pid, int stat) {
 	if (WIFEXITED(stat) || WIFSIGNALED(stat)) {
 		proc->terminated = true;
 		proc->stat = stat;
+		if (WIFSIGNALED(stat)) {
+			int sig = WTERMSIG(stat);
+			if (
+				sig == SIGQUIT || sig == SIGTERM ||
+				sig == SIGKILL || sig == SIGSEGV ||
+				sig == SIGFPE  || sig == SIGILL  ||
+				sig == SIGABRT || sig == SIGSYS
+			) printf("%s\n", strsignal(sig));
+		}
 	} else if (WIFSTOPPED(stat)) {
 		proc->stopped = true;
 		proc->signal = WSTOPSIG(stat);
