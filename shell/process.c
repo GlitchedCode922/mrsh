@@ -48,7 +48,7 @@ int process_poll(struct mrsh_process *proc) {
 	if (WIFEXITED(proc->stat)) {
 		return WEXITSTATUS(proc->stat);
 	} else if (WIFSIGNALED(proc->stat)) {
-		return 129; // POSIX requires >128
+		return 128 + WTERMSIG(proc->stat);
 	} else {
 		abort();
 	}
