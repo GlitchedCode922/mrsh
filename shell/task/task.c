@@ -134,7 +134,7 @@ static int run_for_clause(struct mrsh_context *ctx, struct mrsh_for_clause *fc) 
 		call_frame_get_priv(ctx->state->frame);
 	int loop_num = ++frame_priv->nloops;
 
-	uint32_t prev_attribs;
+	uint32_t prev_attribs = MRSH_VAR_ATTRIB_NONE;
 	mrsh_env_get(ctx->state, fc->name, &prev_attribs);
 	if ((prev_attribs & MRSH_VAR_ATTRIB_READONLY)) {
 		fprintf(stderr, "Cannot modify read-only variable %s\n", fc->name);
