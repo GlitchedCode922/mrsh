@@ -397,7 +397,7 @@ int run_command_list_array(struct mrsh_context *ctx, struct mrsh_array *array) {
 }
 
 static void show_job(struct mrsh_job *job, struct mrsh_job *current,
-		struct mrsh_job *previous, bool r) {
+		struct mrsh_job *previous) {
 	char curprev = ' ';
 	if (job == current) {
 		curprev = '+';
@@ -406,7 +406,7 @@ static void show_job(struct mrsh_job *job, struct mrsh_job *current,
 	}
 	char *cmd = mrsh_node_format(job->node);
 	fprintf(stderr, "[%d] %c %s %s\n", job->job_id, curprev,
-		job_state_str(job, r), cmd);
+		job_state_str(job), cmd);
 	free(cmd);
 }
 
@@ -415,7 +415,6 @@ void mrsh_destroy_terminated_jobs(struct mrsh_state *state) {
 
 	struct mrsh_job *current = job_by_id(state, "%+", false),
 		*previous = job_by_id(state, "%-", false);
-	bool r = rand() % 2 == 0;
 
 	refresh_jobs_status(state);
 
@@ -425,7 +424,7 @@ void mrsh_destroy_terminated_jobs(struct mrsh_state *state) {
 		int status = job_poll(job);
 
 		if (state->options & MRSH_OPT_NOTIFY && job->pending_notification) {
-			show_job(job, current, previous, r);
+			show_job(job, current, previous);
 			job->pending_notification = false;
 		}
 
